@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1A2A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="问题清单">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>问题清单</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --text: #1A1815;
+    --text-muted: #8A8680;
+    --text-hint: #C2BFB9;
+    --accent: #2D5016;
+    --accent-light: #EAF3DE;
+    --accent-mid: #639922;
+    --border: rgba(26,24,21,0.1);
+    --border-hover: rgba(26,24,21,0.2);
+    --solved-bg: #F9F8F5;
+    --tag-bg: #F0EDE8;
+    --danger: #A32D2D;
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F0E0C;
+      --surface: #1A1917;
+      --text: #F0EDE8;
+      --text-muted: #8A8680;
+      --text-hint: #4A4844;
+      --accent: #97C459;
+      --accent-light: #1A2A0A;
+      --accent-mid: #639922;
+      --border: rgba(240,237,232,0.08);
+      --border-hover: rgba(240,237,232,0.18);
+      --solved-bg: #141311;
+      --tag-bg: #252320;
+      --danger: #F09595;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    font-size: 15px;
+    line-height: 1.6;
+    overscroll-behavior: none;
+  }
+
+  .app {
+    max-width: 640px;
+    margin: 0 auto;
+    padding-top: var(--safe-top);
+    padding-bottom: calc(120px + var(--safe-bottom));
+  }
+
+  /* Header */
+  .header { padding: 40px 24px 20px; }
+  .header-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .logo {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .header-count { font-size: 13px; color: var(--text-muted); padding-bottom: 4px; }
+  .header-sub { font-size: 13px; color: var(--text-muted); }
+
+  /* Install banner */
+  .install-banner {
+    margin: 0 24px 16px;
+    background: var(--accent-light);
+    border: 1px solid var(--accent-mid);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+  }
+  .install-banner.show { display: flex; }
+  .install-banner p { flex: 1; font-size: 13px; color: var(--accent); line-height: 1.5; }
+  .install-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .install-close {
+    font-size: 16px;
+    color: var(--accent-mid);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* iOS install hint */
+  .ios-hint {
+    margin: 0 24px 16px;
+    background: var(--accent-light);
+    border: 1px solid var(--accent-mid);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: none;
+  }
+  .ios-hint.show { display: block; }
+  .ios-hint p { font-size: 13px; color: var(--accent); line-height: 1.8; }
+  .ios-hint button {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--accent-mid);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+
+  /* Input */
+  .input-area { padding: 0 24px 16px; }
+  .input-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-box:focus-within {
+    border-color: var(--accent-mid);
+    box-shadow: 0 0 0 3px rgba(99,153,34,0.1);
+  }
+  .input-box textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    line-height: 1.6;
+  }
+  .input-box textarea::placeholder { color: var(--text-hint); }
+  .input-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .tag-select {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    border: none;
+    outline: none;
+    background: var(--tag-bg);
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .add-btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .add-btn:active { transform: scale(0.96); opacity: 0.85; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 24px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tab.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* Tag filters */
+  .tag-filters {
+    display: flex;
+    gap: 6px;
+    padding: 0 24px 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-height: 30px;
+  }
+  .tag-filters::-webkit-scrollbar { display: none; }
+  .tag-pill {
+    font-size: 12px;
+    padding: 3px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.15s;
+  }
+  .tag-pill.active {
+    background: var(--accent-light);
+    border-color: var(--accent-mid);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* List */
+  .list { padding: 0 24px; display: flex; flex-direction: column; gap: 10px; }
+
+  .q-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    animation: fadeUp 0.2s ease;
+    transition: border-color 0.15s;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .q-item.solved { background: var(--solved-bg); }
+
+  .check-btn {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-hover);
+    background: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.2s;
+  }
+  .check-btn:active { transform: scale(0.88); }
+  .check-btn.done { background: var(--accent-mid); border-color: var(--accent-mid); }
+  .check-btn.done::after {
+    content: '';
+    display: block;
+    width: 6px; height: 10px;
+    border: 2px solid white;
+    border-top: none; border-left: none;
+    transform: rotate(45deg) translateY(-1px);
+  }
+
+  .q-body { flex: 1; min-width: 0; }
+  .q-text {
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.65;
+    word-break: break-all;
+  }
+  .q-item.solved .q-text { text-decoration: line-through; color: var(--text-hint); }
+  .q-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .q-meta { display: flex; align-items: center; gap: 8px; }
+  .q-date { font-size: 12px; color: var(--text-hint); }
+  .q-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--tag-bg);
+    color: var(--text-muted);
+  }
+  .act-btn {
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    color: var(--text-hint);
+    cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.15s;
+  }
+  .act-btn:active { background: var(--tag-bg); }
+
+  /* Empty */
+  .empty {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--text-hint);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.35; }
+  .empty p { font-size: 14px; line-height: 2.2; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(24px + var(--safe-bottom));
+    left: 50%; transform: translateX(-50%);
+    background: var(--text);
+    color: var(--bg);
+    font-size: 13px;
+    padding: 10px 22px;
+    border-radius: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    white-space: nowrap;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-top">
+      <span class="logo">问题清单</span>
+      <span class="header-count" id="count-label">—</span>
+    </div>
+    <p class="header-sub">把脑子里的困惑记下来，慢慢想清楚。</p>
+  </div>
+
+  <!-- Android install banner -->
+  <div class="install-banner" id="install-banner">
+    <p>安装到手机桌面，随时记录。</p>
+    <button class="install-btn" id="install-btn">安装</button>
+    <button class="install-close" id="install-close">×</button>
+  </div>
+
+  <!-- iOS install hint -->
+  <div class="ios-hint" id="ios-hint">
+    <p>点击底部的 <strong>分享</strong> 按钮，然后选择<strong>「添加到主屏幕」</strong>，即可安装到桌面。</p>
+    <button onclick="document.getElementById('ios-hint').classList.remove('show')">知道了</button>
+  </div>
+
+  <div class="input-area">
+    <div class="input-box">
+      <textarea id="q-input" placeholder="记录一个让你困惑的问题…" rows="2" oninput="autoResize(this)"></textarea>
+      <div class="input-footer">
+        <select class="tag-select" id="new-tag">
+          <option>生活</option>
+          <option>工作</option>
+          <option>技术</option>
+          <option>人生</option>
+          <option>其他</option>
+        </select>
+        <button class="add-btn" onclick="addQuestion()">记录</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="all" onclick="setTab(this)">全部</button>
+    <button class="tab" data-tab="open" onclick="setTab(this)">未解决</button>
+    <button class="tab" data-tab="solved" onclick="setTab(this)">已解决</button>
+  </div>
+
+  <div class="tag-filters" id="tag-filters"></div>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Data ──────────────────────────────────────────
+const KEY = 'q-list-v1';
+let questions = [];
+let currentTab = 'all';
+let currentTag = null;
+
+function load() {
+  try { questions = JSON.parse(localStorage.getItem(KEY)) || []; } catch { questions = []; }
+  if (!questions.length) {
+    questions = [
+      { id: 1, text: '为什么我越努力，越觉得自己不够好？', solved: false, date: today(), tag: '人生' },
+      { id: 2, text: '如何判断一个决定是对的，还是只是自我安慰？', solved: false, date: today(), tag: '人生' },
+      { id: 3, text: '专注力差是性格问题还是可以训练的？', solved: true, date: today(), tag: '生活' },
+    ];
+    save();
+  }
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(questions)); }
+function today() {
+  return new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit' }).replace(/\//g, '-');
+}
+
+// ── Actions ───────────────────────────────────────
+function addQuestion() {
+  const inp = document.getElementById('q-input');
+  const text = inp.value.trim();
+  if (!text) { inp.focus(); return; }
+  const tag = document.getElementById('new-tag').value;
+  questions.unshift({ id: Date.now(), text, solved: false, date: today(), tag });
+  inp.value = ''; inp.style.height = '';
+  save(); render(); toast('已记录 ✓');
+}
+
+function toggleSolved(id) {
+  const q = questions.find(q => q.id === id);
+  if (!q) return;
+  q.solved = !q.solved;
+  save(); render();
+  toast(q.solved ? '已标记解决 ✓' : '重新打开');
+}
+
+function deleteQ(id) {
+  if (!confirm('确定删除这个问题？')) return;
+  questions = questions.filter(q => q.id !== id);
+  save(); render(); toast('已删除');
+}
+
+function setTab(el) {
+  currentTab = el.dataset.tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function filterTag(tag) {
+  currentTag = currentTag === tag ? null : tag;
+  render();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── Toast ─────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ── Render ────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function render() {
+  let list = [...questions];
+  if (currentTab === 'open') list = list.filter(q => !q.solved);
+  if (currentTab === 'solved') list = list.filter(q => q.solved);
+  if (currentTag) list = list.filter(q => q.tag === currentTag);
+
+  const open = questions.filter(q => !q.solved).length;
+  document.getElementById('count-label').textContent = open + ' 个未解决';
+
+  const tags = [...new Set(questions.map(q => q.tag))];
+  const tf = document.getElementById('tag-filters');
+  tf.innerHTML = tags.length > 1
+    ? tags.map(t => `<button class="tag-pill ${currentTag===t?'active':''}" onclick="filterTag('${esc(t)}')">${esc(t)}</button>`).join('')
+    : '';
+
+  const el = document.getElementById('list');
+  if (!list.length) {
+    const msgs = {
+      all:    ['还没有记录任何问题', '把脑子里的困惑写下来吧'],
+      open:   ['没有未解决的问题', ''],
+      solved: ['还没有解决过的问题', '慢慢来，一个一个想清楚'],
+    };
+    const [l1, l2] = msgs[currentTab] || msgs.all;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">?</div><p>${l1}${l2 ? '<br>' + l2 : ''}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(q => `
+    <div class="q-item ${q.solved?'solved':''}">
+      <button class="check-btn ${q.solved?'done':''}" onclick="toggleSolved(${q.id})"></button>
+      <div class="q-body">
+        <div class="q-text">${esc(q.text)}</div>
+        <div class="q-footer">
+          <div class="q-meta">
+            <span class="q-date">${esc(q.date)}</span>
+            <span class="q-tag">${esc(q.tag)}</span>
+          </div>
+          <button class="act-btn" onclick="deleteQ(${q.id})">删除</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── PWA: Service Worker ───────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ── PWA: Install prompt (Android/Chrome) ──────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('install-dismissed')) {
+    document.getElementById('install-banner').classList.add('show');
+  }
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('install-banner').classList.remove('show');
+  if (outcome === 'accepted') toast('安装成功！');
+});
+
+document.getElementById('install-close').addEventListener('click', () => {
+  document.getElementById('install-banner').classList.remove('show');
+  localStorage.setItem('install-dismissed', '1');
+});
+
+// ── PWA: iOS hint ─────────────────────────────────
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone;
+if (isIOS && !isStandalone && !localStorage.getItem('ios-hint-dismissed')) {
+  document.getElementById('ios-hint').classList.add('show');
+  document.querySelector('#ios-hint button').addEventListener('click', () => {
+    localStorage.setItem('ios-hint-dismissed', '1');
+  });
+}
+
+// ── Init ──────────────────────────────────────────
+document.getElementById('q-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addQuestion(); }
+});
+
+load();
+render();
+</script>
+</body>
+</html>
